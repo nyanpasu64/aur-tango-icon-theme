@@ -1,28 +1,45 @@
 # Maintainer: Steffen Weber <-boenki-gmx-de->
 # Contributor: Thayer Williams <thayer@archlinux.org>
 # Contributor: James Rayner <james@archlinux.org>
+# Contributor: Justin Gottula <justin@jgottula.com>
 
 pkgname=tango-icon-theme
 pkgver=0.8.90
-pkgrel=14
+pkgrel=15
 pkgdesc="Icon theme that follows the Tango visual guidelines"
 arch=('any')
 url="http://tango.freedesktop.org"
 license=('custom:public domain' 'custom:TRADEMARKS')
-makedepends=('imagemagick' 'icon-naming-utils' 'intltool' 'librsvg')
+makedepends=('imagemagick' 'icon-naming-utils' 'intltool' 'librsvg' 'parallel')
 options=(!strip !zipman)
 source=(${url}/releases/${pkgname}-${pkgver}.tar.bz2
         symbol.svg
         TRADEMARKS
-        rsvg.patch)
+        rsvg.patch
+        convert-parallel-scalable.patch
+        convert-parallel-22x22.patch)
 md5sums=('b7b9b16480afb781a4c13f8bceb8688b'
          'e9c0c2e165f2883c3fa00277635ae4ae'
          '538362c9ff75fd6939d9024ac4329430'
-         '40cb8a4dd485bac0851c6fd2915d43ba')
+         '40cb8a4dd485bac0851c6fd2915d43ba'
+         '61313bb3c31f5f525a7c2fc304500059'
+         'd0c7068b7da4b78b65f2f3859a4bdbd7')
 
 prepare() {
   cd ${pkgname}-${pkgver}
   patch -p0 < "${srcdir}/rsvg.patch"
+
+  # patch the makefiles so they will run parallel instances of ImageMagick,
+  # instead of painfully running convert instances serially one-file-at-a-time
+  # (DRAMATIC reduction in package build time for multi-core machines!)
+  for file in scalable/*/Makefile.am; do
+    patch -uN $file "${srcdir}/convert-parallel-scalable.patch"
+  done
+  for file in 22x22/*/Makefile.am; do
+    [[ "$file" == *"/animations/"* ]] && continue
+    patch -uN $file "${srcdir}/convert-parallel-22x22.patch"
+  done
+
   autoreconf -fi
 }
 
