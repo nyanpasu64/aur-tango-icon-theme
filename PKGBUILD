@@ -5,29 +5,31 @@
 
 pkgname=tango-icon-theme
 pkgver=0.8.90
-pkgrel=15
+pkgrel=16
 pkgdesc="Icon theme that follows the Tango visual guidelines"
 arch=('any')
 url="http://tango.freedesktop.org"
 license=('custom:public domain' 'custom:TRADEMARKS')
-makedepends=('imagemagick' 'icon-naming-utils' 'intltool' 'librsvg' 'parallel')
+makedepends=('imagemagick' 'icon-naming-utils' 'intltool' 'parallel')
 options=(!strip !zipman)
 source=(${url}/releases/${pkgname}-${pkgver}.tar.bz2
         symbol.svg
         TRADEMARKS
-        rsvg.patch
+        imagemagick.patch
         convert-parallel-scalable.patch
         convert-parallel-22x22.patch)
 md5sums=('b7b9b16480afb781a4c13f8bceb8688b'
          'e9c0c2e165f2883c3fa00277635ae4ae'
          '538362c9ff75fd6939d9024ac4329430'
-         '40cb8a4dd485bac0851c6fd2915d43ba'
+         'c6dc8bd449392af2a4f6f6e07fc8ed78'
          '61313bb3c31f5f525a7c2fc304500059'
          'd0c7068b7da4b78b65f2f3859a4bdbd7')
 
 prepare() {
   cd ${pkgname}-${pkgver}
-  patch -p0 < "${srcdir}/rsvg.patch"
+
+  # help me
+  patch < "${srcdir}/imagemagick.patch"
 
   # patch the makefiles so they will run parallel instances of ImageMagick,
   # instead of painfully running convert instances serially one-file-at-a-time
@@ -68,7 +70,7 @@ package() {
 
   for size in 16 22 24 32 48 64 72 96 128; do
    # replace default logo with Arch Linux's
-   convert -background none "${srcdir}/symbol.svg" -resize ${size}x${size}  \
+   magick -background none -density "%[fx:96*${size}/48]" "${srcdir}/symbol.svg" \
     "${size}x${size}/places/start-here.png"
    # create icon for category "Education"
    ln -s "../status/dialog-information.png" \
